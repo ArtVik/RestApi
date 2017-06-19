@@ -1,7 +1,5 @@
 <?php
-
 namespace AppBundle\Features\Context;
-
 use Behat\Behat\Context\Context;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
@@ -13,7 +11,6 @@ use PHPUnit_Framework_Assert as Assertions;
 use Sanpi\Behatch\Json\JsonInspector;
 use Sanpi\Behatch\Json\JsonSchema;
 use Symfony\Component\HttpFoundation\Request;
-
 /**
  * Class RestApiContext
  * @package AppBundle\Features\Context
@@ -24,32 +21,26 @@ class RestApiContext implements Context
      * @var ClientInterface
      */
     protected $client;
-
     /**
      * @var string
      */
     private $authorization;
-
     /**
      * @var array
      */
     private $headers = [];
-
     /**
      * @var \GuzzleHttp\Message\RequestInterface
      */
     private $request;
-
     /**
      * @var \GuzzleHttp\Message\ResponseInterface
      */
     private $response;
-
     /**
      * @var array
      */
     private $placeHolders = array();
-
     /**
      * RestApiContext constructor.
      * @param ClientInterface   $client
@@ -58,7 +49,6 @@ class RestApiContext implements Context
     {
         $this->client = $client;
     }
-
     /**
      * Adds Basic Authentication header to next request.
      *
@@ -73,7 +63,6 @@ class RestApiContext implements Context
         $this->authorization = base64_encode($username . ':' . $password);
         $this->addHeader('Authorization', 'Basic ' . $this->authorization);
     }
-
     /**
      * Adds JWT Token to Authentication header for next request
      *
@@ -85,30 +74,22 @@ class RestApiContext implements Context
     public function iAmSuccessfullyLoggedInWithUsernameAndPassword($username, $password)
     {
         try {
-
             $this->iSendARequest('POST', 'login', [
                 'json' => [
                     'username' => $username,
                     'password' => $password,
                 ]
             ]);
-
             $this->theResponseCodeShouldBe(200);
-
             $responseBody = json_decode($this->response->getBody(), true);
             $this->addHeader('Authorization', 'Bearer ' . $responseBody['token']);
-
         } catch (RequestException $e) {
-
             echo Psr7\str($e->getRequest());
-
             if ($e->hasResponse()) {
                 echo Psr7\str($e->getResponse());
             }
-
         }
     }
-
     /**
      * @When I have forgotten to set the :header
      */
@@ -116,7 +97,6 @@ class RestApiContext implements Context
     {
         $this->addHeader($header, null);
     }
-
     /**
      * Sets a HTTP Header.
      *
@@ -129,7 +109,6 @@ class RestApiContext implements Context
     {
         $this->addHeader($name, $value);
     }
-
     /**
      * Sends HTTP request to specific relative URL.
      *
@@ -142,9 +121,7 @@ class RestApiContext implements Context
     {
         $url = $this->prepareUrl($url);
         $data = $this->prepareData($data);
-
 //        print_r($data);
-
         try {
             $this->response = $this->getClient()->request($method, $url, $data);
         } catch (RequestException $e) {
@@ -153,7 +130,6 @@ class RestApiContext implements Context
             }
         }
     }
-
     /**
      * Sends HTTP request to specific URL with field values from Table.
      *
@@ -167,11 +143,9 @@ class RestApiContext implements Context
     {
         $url = $this->prepareUrl($url);
         $fields = array();
-
         foreach ($post->getRowsHash() as $key => $val) {
             $fields[$key] = $this->replacePlaceHolder($val);
         }
-
         $bodyOption = array(
             'body' => json_encode($fields),
         );
@@ -179,10 +153,8 @@ class RestApiContext implements Context
         if (!empty($this->headers)) {
             $this->request->addHeaders($this->headers);
         }
-
         $this->sendRequest();
     }
-
     /**
      * Sends HTTP request to specific URL with raw body from PyString.
      *
@@ -196,14 +168,12 @@ class RestApiContext implements Context
     {
         $url = $this->prepareUrl($url);
         $string = $this->replacePlaceHolder(trim($string));
-
         $this->request = $this->iSendARequest(
             $method,
             $url,
             [ 'body' => $string, ]
         );
     }
-
     /**
      * Sends HTTP request to specific URL with form data from PyString.
      *
@@ -217,7 +187,6 @@ class RestApiContext implements Context
     {
         $url = $this->prepareUrl($url);
         $body = $this->replacePlaceHolder(trim($body));
-
         $fields = array();
         parse_str(implode('&', explode("\n", $body)), $fields);
         $this->request = $this->getClient()->createRequest($method, $url);
@@ -226,52 +195,38 @@ class RestApiContext implements Context
         foreach ($fields as $key => $value) {
             $requestBody->setField($key, $value);
         }
-
         $this->sendRequest();
     }
-
     /**
      * @When /^(?:I )?send a multipart "([A-Z]+)" request to "([^"]+)" with form data:$/
      */
     public function iSendAMultipartRequestToWithFormData($method, $url, TableNode $post)
     {
         $url = $this->prepareUrl($url);
-
         $this->request = $this->getClient()->createRequest($method, $url);
-
         $data = $post->getColumnsHash()[0];
-
         $hasFile = false;
-
         if (array_key_exists('filePath', $data)) {
             $filePath = $this->dummyDataPath . $data['filePath'];
             unset($data['filePath']);
             $hasFile = true;
         }
-
-
         /** @var \GuzzleHttp\Post\PostBodyInterface $requestBody */
         $requestBody = $this->request->getBody();
         foreach ($data as $key => $value) {
             $requestBody->setField($key, $value);
         }
-
-
         if ($hasFile) {
             $file = fopen($filePath, 'rb');
             $postFile = new PostFile('uploadedFile', $file);
             $requestBody->addFile($postFile);
         }
-
-
         if (!empty($this->headers)) {
             $this->request->addHeaders($this->headers);
         }
         $this->request->setHeader('Content-Type', 'multipart/form-data');
-
         $this->sendRequest();
     }
-
     /**
      * Checks that response has specific status code.
      *
@@ -285,7 +240,6 @@ class RestApiContext implements Context
         $actual = intval($this->response->getStatusCode());
         Assertions::assertSame($expected, $actual);
     }
-
     /**
      * Checks that response body contains specific text.
      *
@@ -299,7 +253,6 @@ class RestApiContext implements Context
         $actual = (string) $this->response->getBody();
         Assertions::assertRegExp($expectedRegexp, $actual);
     }
-
     /**
      * Checks that response body doesn't contains specific text.
      *
@@ -313,7 +266,6 @@ class RestApiContext implements Context
         $actual = (string) $this->response->getBody();
         Assertions::assertNotRegExp($expectedRegexp, $actual);
     }
-
     /**
      * Checks that response body contains JSON from PyString.
      *
@@ -329,20 +281,17 @@ class RestApiContext implements Context
     {
         $etalon = json_decode($this->replacePlaceHolder($jsonString->getRaw()), true);
         $actual = json_decode($this->response->getBody(), true);
-
         if (null === $etalon) {
             throw new \RuntimeException(
                 "Can not convert etalon to json:\n" . $this->replacePlaceHolder($jsonString->getRaw())
             );
         }
-
         Assertions::assertGreaterThanOrEqual(count($etalon), count($actual));
         foreach ($etalon as $key => $needle) {
             Assertions::assertArrayHasKey($key, $actual);
             Assertions::assertEquals($etalon[$key], $actual[$key]);
         }
     }
-
     /**
      * Prints last response body.
      *
@@ -351,14 +300,12 @@ class RestApiContext implements Context
     public function printResponse()
     {
         $response = $this->response;
-
         echo sprintf(
             "%d:\n%s",
             $response->getStatusCode(),
             $response->getBody()
         );
     }
-
     /**
      * @Then the response header :header should be equal to :value
      */
@@ -367,7 +314,6 @@ class RestApiContext implements Context
         $header = $this->response->getHeaders()[$header];
         Assertions::assertContains($value, $header);
     }
-
     /**
      * Prepare URL by replacing placeholders and trimming slashes.
      *
@@ -379,7 +325,6 @@ class RestApiContext implements Context
     {
         return ltrim($this->replacePlaceHolder($url), '/');
     }
-
     /**
      * Sets place holder for replacement.
      *
@@ -393,32 +338,26 @@ class RestApiContext implements Context
     {
         $this->placeHolders[$key] = $value;
     }
-
     /**
      * @Then I follow the link in the Location response header
      */
     public function iFollowTheLinkInTheLocationResponseHeader()
     {
         $location = $this->response->getHeader('Location')[0];
-
         $this->iSendARequest(Request::METHOD_GET, $location);
     }
-
     /**
      * @Then the JSON should be valid according to this schema:
      */
     public function theJsonShouldBeValidAccordingToThisSchema(PyStringNode $schema)
     {
         $inspector = new JsonInspector('javascript');
-
         $json = new \Sanpi\Behatch\Json\Json(json_encode($this->response->json()));
-
         $inspector->validate(
             $json,
             new JsonSchema($schema)
         );
     }
-
     /**
      * Checks, that given JSON node is equal to given value
      *
@@ -427,18 +366,14 @@ class RestApiContext implements Context
     public function theJsonNodeShouldBeEqualTo($node, $text)
     {
         $json = new \Sanpi\Behatch\Json\Json(json_encode($this->response->json()));
-
         $inspector = new JsonInspector('javascript');
-
         $actual = $inspector->evaluate($json, $node);
-
         if ($actual != $text) {
             throw new \Exception(
                 sprintf("The node value is '%s'", json_encode($actual))
             );
         }
     }
-
     /**
      * Replaces placeholders in provided text.
      *
@@ -451,10 +386,8 @@ class RestApiContext implements Context
         foreach ($this->placeHolders as $key => $val) {
             $string = str_replace($key, $val, $string);
         }
-
         return $string;
     }
-
     /**
      * Returns headers, that will be used to send requests.
      *
@@ -464,7 +397,6 @@ class RestApiContext implements Context
     {
         return $this->headers;
     }
-
     /**
      * Adds header
      *
@@ -476,14 +408,11 @@ class RestApiContext implements Context
         if ( ! isset($this->headers[$name])) {
             $this->headers[$name] = $value;
         }
-
         if (!is_array($this->headers[$name])) {
             $this->headers[$name] = [$this->headers[$name]];
         }
-
         $this->headers[$name] = $value;
     }
-
     /**
      * Removes a header identified by $headerName
      *
@@ -495,7 +424,6 @@ class RestApiContext implements Context
             unset($this->headers[$headerName]);
         }
     }
-
     /**
      * @return ClientInterface
      */
@@ -504,10 +432,8 @@ class RestApiContext implements Context
         if (null === $this->client) {
             throw new \RuntimeException('Client has not been set in WebApiContext');
         }
-
         return $this->client;
     }
-
     private function prepareData($data)
     {
         if (!empty($this->headers)) {
@@ -516,7 +442,6 @@ class RestApiContext implements Context
                 ["headers" => $this->headers]
             );
         }
-
         return $data;
     }
 }

@@ -17,4 +17,4 @@ csa_guzzle:
                 base_uri: "http://api.rebels-originals-api.dev/app_acceptance.php/"
 
 parameters:
-    database_name:  "champions__aceptance"
+    database_name:  "champions__acceptance"
